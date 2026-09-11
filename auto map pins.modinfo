@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Mod id="94bfbf5c-e25c-4da2-886c-dd9a14de20bd" version="1">
+    <Properties>
+        <Name>Auto Map Pins</Name>
+        <Description>Automatically places pins in specific situations.</Description>
+        <Teaser>Map Pins are automatic!</Teaser>
+        <Authors>satoon101</Authors>
+        <CompatibleVersions>2.0</CompatibleVersions>
+    </Properties>
+
+    <InGameActions>
+
+        <AddUserInterfaces id="AutoMapPinsUI">
+            <Properties>
+                <Context>InGame</Context>
+            </Properties>
+            <File>scripts/UI/AutoMapPins.xml</File>
+        </AddUserInterfaces>
+
+        <ImportFiles id="AutoMapPinsHelpers">
+            <File>scripts/UI/AutoMapPins_Constants.lua</File>
+            <File>scripts/UI/AutoMapPins_Helpers.lua</File>
+            <File>scripts/UI/AutoMapPins_Managers.lua</File>
+        </ImportFiles>
+
+    </InGameActions>
+
+    <Files>
+        <File>scripts/UI/AutoMapPins.lua</File>
+        <File>scripts/UI/AutoMapPins.xml</File>
+        <File>scripts/UI/AutoMapPins_Constants.lua</File>
+        <File>scripts/UI/AutoMapPins_Helpers.lua</File>
+        <File>scripts/UI/AutoMapPins_Managers.lua</File>
+    </Files>
+</Mod>
