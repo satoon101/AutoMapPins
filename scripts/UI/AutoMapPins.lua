@@ -76,6 +76,7 @@ function AddMapPinsForCityCenter(playerID, pinID, pinName, iX, iY)
         end
     end
 
+    print(obj.wonderName)
     if obj.wonderName ~= "DISTRICT_DIPLOMATIC_QUARTER" then
         local districtType, adjacent = obj:GetDistrictForWonder()
         if districtType ~= nil and districtType ~= "DISTRICT_CITY_CENTER" then
