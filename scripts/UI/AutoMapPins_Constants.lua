@@ -1,10 +1,15 @@
+GREAT_BATH_BUILDING_INDEX = GameInfo.Buildings["BUILDING_GREAT_BATH"].Index
+
+CANAL_INDEX = GameInfo.Districts["DISTRICT_CANAL"].Index
 CITY_CENTER_INDEX = GameInfo.Districts["DISTRICT_CITY_CENTER"].Index
 DAM_INDEX = GameInfo.Districts["DISTRICT_DAM"].Index
 DIPLOMATIC_INDEX = GameInfo.Districts["DISTRICT_DIPLOMATIC_QUARTER"]
 WONDER_INDEX = GameInfo.Districts["DISTRICT_WONDER"].Index
 
 FLOODPLAINS_INDEX = GameInfo.Features["FEATURE_FLOODPLAINS"]
-FOREST_INDEX = GameInfo.Features["FEATURE_FOREST"]
+WOODS_INDEX = GameInfo.Features["FEATURE_FOREST"]
 JUNGLE_INDEX = GameInfo.Features["FEATURE_JUNGLE"]
 OASIS_INDEX = GameInfo.Features["FEATURE_OASIS"]
 VOLCANO_INDEX = GameInfo.Features["FEATURE_VOLCANO"]
+
+print("=== Auto Map Pins (Constants) Loaded ===")

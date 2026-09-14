@@ -1,50 +1,61 @@
 
 include("AutoMapPins_Constants")
 
-function GetRiverHasDam(playerID, riverName)
-    local rivers = RiverManager.EnumerateRivers()
-    local plotsMarkedForDam = GetPlotsMarkedForDam(playerID)
-    for i1 = 1, #rivers do
-        local river = rivers[i1]
-        if river.Name == riverName then
-            for i2 = 1, #river.Edges do
-                local edge = river.Edges[i2]
-                for i3 = 1, #edge do
-                    local plotID = edge[i3]
-                    local plot = Map.GetPlotByIndex(plotID)
-                    if (
-                        plot:GetDistrictType() == DAM_INDEX
-                        or plotsMarkedForDam[plotID] ~= nil
-                    ) then
-                        return true
-                    end
-                end
-            end
+function GetWonderForPlot(pinName, plotID)
+    local building = GameInfo.Buildings[pinName]
+    if building ~= nil then
+        if (
+            building.IsWonder or
+            building.Index == DIPLOMATIC_INDEX
+        ) then
+            return plotID
         end
     end
+    return nil
 end
 
-function GetPlotsMarkedForDam(playerID)
-    local plotsMarkedForDam = {}
+function GetCityCenterForPlot(pinName, plotID)
+    if pinName == "DISTRICT_CITY_CENTER" then
+        return plotID
+    end
+    local plot = Map.GetPlotByIndex(plotID)
+    if plot:IsCity() then
+        return plotID
+    end
+    return nil
+end
+
+function MatchCityCenterAndWonderPins(playerID, iX, iY, checkFunction)
     local config = PlayerConfigurations[playerID]
     if config == nil then
-        return plotsMarkedForDam
+        return
     end
 
+    local pinsByPlot = {}
     local pins = config:GetMapPins()
-    if pins == nil or #pins == 0 then
-        return plotsMarkedForDam
-    end
-
-    for i = 1, #pins do
-        local pin = pins[i]
-        local pinName = pin:GetIconName():gsub("^ICON_", "")
-        if pinName == "DISTRICT_DAM" then
-            local plot = Map.GetPlot(pin:GetHexX(), pin:GetHexY())
-            plotsMarkedForDam[plot:GetIndex()] = true
+    for _, pin in pairs(pins) do
+        local x = pin:GetHexX()
+        local y = pin:GetHexY()
+        local distance = Map.GetPlotDistance(x, y, iX, iY)
+        if distance <= 3 then
+            local plot = Map.GetPlot(x, y)
+            local plotID = plot:GetIndex()
+            local pinName = pin:GetIconName():gsub("^ICON_", "")
+            pinsByPlot[plotID] = pinName
         end
     end
-    return plotsMarkedForDam
+
+    local radiusPlots = Map.GetNeighborPlots(iX, iY, 3)
+    for i = 1, #radiusPlots do
+        local plot = radiusPlots[i]
+        local plotID = plot:GetIndex()
+        local pinName = pinsByPlot[plotID]
+        local value = checkFunction(pinName, plotID)
+        if value then
+            return value
+        end
+    end
+    return nil
 end
 
 function GetValidTerrainsForDistrict(districtType)
@@ -88,6 +99,15 @@ function AddPin(playerID, pinName, plotID)
 end
 
 function RemovePin(playerID, pinID)
+    local config = PlayerConfigurations[playerID]
+    local pins = config:GetMapPins()
+    local pin = pins[pinID]
+    local iconName = pin:GetIconName()
+    local iX = pin:GetHexX()
+    local iY = pin:GetHexY()
     PlayerConfigurations[playerID]:DeleteMapPin(pinID)
     Network.BroadcastPlayerInfo()
+    LuaEvents.MapPinPopup_OnDelete(playerID, pinID, iconName, iX, iY)
 end
+
+print("=== Auto Map Pins (Helpers) Loaded ===")

@@ -68,12 +68,42 @@ function CityMapPinManager:new(playerID, centerPlotID, wonderPlotID, wonderName)
         plotsByRange = plotsByRange,
         wonderPlotID = wonderPlotID,
         wonderName = wonderName,
+        cananlPlotIDs = nil,
         finishedInitialization = false
     }
 
     setmetatable(instance, self)
+    if wonderName == "BUILDING_PANAMA_CANAL" then
+        instance:MarkCanalPlots()
+    end
     CityMapPinManager.Registry[centerPlotID] = instance
     return instance
+end
+
+function CityMapPinManager:MarkCanalPlots()
+    local cityCenterPlot = Map.GetPlotByIndex(self.plotID)
+    local wonderPlot = Map.GetPlotByIndex(self.wonderPlotID)
+    local x1 = cityCenterPlot:GetX()
+    local y1 = cityCenterPlot:GetY()
+    local x2 = wonderPlot:GetX()
+    local y2 = wonderPlot:GetY()
+    if Map.GetPlotDistance(x1, y1, x2, y2) > 2 then
+        return
+    end
+
+    self.canalPlotIDs = {}
+    for direction = 0, 5 do
+        local checkPlot = Map.GetAdjacentPlot(x1, y1, direction)
+        if checkPlot ~= nil then
+            local x3 = checkPlot:GetX()
+            local y3 = checkPlot:GetY()
+            if Map.GetPlotDistance(x2, y2, x3, y3) == 1 then
+                local checkPlotID = checkPlot:GetIndex()
+                table.insert(self.canalPlotIDs, checkPlotID)
+                self:AddPin("DISTRICT_CANAL", checkPlotID, false)
+            end
+        end
+    end
 end
 
 function CityMapPinManager:RefreshMapPinMapping()
@@ -82,27 +112,29 @@ function CityMapPinManager:RefreshMapPinMapping()
     self.mapPinPlotsByName = {}
     local config = PlayerConfigurations[self.playerID]
     local pins = config:GetMapPins()
-    for i = 1, #pins do
-        local pin = pins[i]
+    for pinID, pin in pairs(pins) do
         local x = pin:GetHexX()
         local y = pin:GetHexY()
         local plot = Map.GetPlot(x, y)
         local plotID = plot:GetIndex()
         if self.plotMap[plotID] ~= nil then
-            local pinID = pin:GetID()
             self.mapPinIDsByPlot[plotID] = pinID
             local pinName = pin:GetIconName():gsub("^ICON_", "")
             self.mapPinNamesByID[pinID] = pinName
             self.mapPinPlotsByName[pinName] = plotID
-            if pinName == "DISTRICT_DAM" then
+            if (
+                pinName == "DISTRICT_DAM" or
+                pinName == "BUILDING_GREAT_BATH"
+            ) then
                 local riverName = RiverManager:GetRiverName(plot)
                 self.mapPinsForDams[plotID] = riverName
-                RiverDamManager.RegisterDamMapPinForPlot(riverName, plotID)
+                local obj = RiverDamManager:new(riverName)
+                obj:RegisterDamMapPinForPlot(plotID)
             end
         end
     end
-    local plot = Map.GetPlotByIndex(self.plotID)
-    local city = Cities.GetPlotPurchaseCity(plot)
+    local cityPlot = Map.GetPlotByIndex(self.plotID)
+    local city = Cities.GetPlotPurchaseCity(cityPlot)
     if city ~= nil then
         local districts = city:GetDistricts()
         for _, district in districts:Members() do
@@ -117,6 +149,24 @@ function CityMapPinManager:RefreshMapPinMapping()
             self.mapPinIDsByPlot[plotID] = pinID
             self.mapPinNamesByID[pinID] = districtType
             self.mapPinPlotsByName[districtType] = plotID
+            if districtTypeID == WONDER_INDEX then
+                local location = district:GetLocation()
+                local buildingIndex = nil
+                if district:IsComplete() then
+                    local buildings = city:GetBuildings()
+                    buildings = buildings:GetBuildingsAtLocation(location)
+                    buildingIndex = buildings[1]
+                else
+                    local queue = city:GetBuildQueue()
+                    local buildings = queue:GetConstructionsAtLocation(location)
+                    buildingIndex = buildings[1]
+                end
+                if buildingIndex == GREAT_BATH_BUILDING_INDEX then
+                    local riverName = RiverManager:GetRiverName(plot)
+                    local obj = RiverDamManager:new(riverName)
+                    obj:RegisterDamMapPinForPlot(plotID)
+                end
+            end
         end
     end
     self.finishedInitialization = true
@@ -141,7 +191,8 @@ function CityMapPinManager:AddPin(name, plotID, refreshMapping)
             local plot = Map.GetPlotByIndex(plotID)
             local riverName = RiverManager:GetRiverName(plot)
             self.mapPinsForDams[plotID] = riverName
-            RiverDamManager.RegisterDamMapPinForPlot(riverName, plotID)
+            local obj = RiverDamManager:new(riverName)
+            obj:RegisterDamMapPinForPlot(plotID)
         end
     end
 end
@@ -202,6 +253,17 @@ function CityMapPinManager:RemoveMapPinForDistrict(iX, iY, districtType)
     local pinID = self.mapPinIDsByPlot[plotID]
     if pinName == "DISTRICT_WONDER" and plotID == self.wonderPlotID then
         pinName = self.wonderName
+        if self.wonderName == "BUILDING_PANAMA_CANAL" then
+            if self.canalPlotIDs ~= nil and #self.canalPlotIDs > 0 then
+                for i = 1, #self.canalPlotIDs do
+                    local canalPlotID = self.canalPlotIDs[i]
+                    local canalPlot = Map.GetPlotByIndex(canalPlotID)
+                    local x = canalPlot:GetX()
+                    local y = canalPlot:GetY()
+                    self:RemoveMapPinForDistrict(x, y, CANAL_INDEX)
+                end
+            end
+        end
     end
     if self.mapPinPlotsByName[pinName] == plotID then
         self:RemovePin(pinID, false)
@@ -306,7 +368,7 @@ function CityMapPinManager:FindPlotForDistrict(baseDistrictType, adjacent)
         )
         if plotID == nil then
             plotID = self:FindAdjacentPlotForDistrict(
-                self.wonderPlotID, baseDistrictType, false
+                self.wonderPlotID, districtType, baseDistrictType, false
             )
         end
         return plotID
@@ -625,8 +687,7 @@ function RiverDamManager:new(riverName)
     }
 
     setmetatable(instance, self)
-    local damDistrictPlotID = instance:FindDamDistrict()
-    self.damDistrictPlotID = damDistrictPlotID
+    self.damDistrictPlotID = instance:FindDamDistrict()
     RiverDamManager.Registry[riverName] = instance
     return instance
 end
@@ -635,8 +696,26 @@ function RiverDamManager:FindDamDistrict()
     for i = 0, #self.damPlotArray do
         local plotID = self.damPlotArray[i]
         local plot = Map.GetPlotByIndex(plotID)
-        if plot:GetDistrictID() == DAM_INDEX then
+        local districtType = plot:GetDistrictType()
+        if districtType == DAM_INDEX then
             return plotID
+        elseif districtType == WONDER_INDEX then
+            local city = CityManager.GetCity(self.playerID, self.cityID)
+            local districts = city:GetDistricts()
+            local queue = city:GetBuildQueue()
+            local district = districts:GetDistrict(WONDER_INDEX)
+            local location = district:GetLocation()
+            local buildingIndex = nil
+            if district:IsComplete() then
+                local buildings = city:GetBuildings()
+                buildingIndex = buildings:GetBuildingsAtLocation(location)
+            else
+                local buildings = queue:GetConstructionsAtLocation(location)
+                buildingIndex = buildings[1]
+            end
+            if buildingIndex == GREAT_BATH_BUILDING_INDEX then
+                return plotID
+            end
         end
     end
     return nil
@@ -651,3 +730,5 @@ function RiverDamManager.RegisterDamMapPinForPlot(riverName, plotID)
         instance.damMapPinPlotID = plotID
     end
 end
+
+print("=== Auto Map Pins (Managers) Loaded ===")
