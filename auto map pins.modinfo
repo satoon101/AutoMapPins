@@ -10,6 +10,13 @@
 
     <InGameActions>
 
+        <ReplaceUIScript id="MapPinPopup_UI">
+            <Properties>
+                <LuaContext>MapPinPopup</LuaContext>
+                <LuaReplace>scripts/UI/MapPinPopup.lua</LuaReplace>
+            </Properties>
+        </ReplaceUIScript>
+
         <AddUserInterfaces id="AutoMapPinsUI">
             <Properties>
                 <Context>InGame</Context>
@@ -31,5 +38,6 @@
         <File>scripts/UI/AutoMapPins_Constants.lua</File>
         <File>scripts/UI/AutoMapPins_Helpers.lua</File>
         <File>scripts/UI/AutoMapPins_Managers.lua</File>
+        <File>scripts/UI/MapPinPopup.lua</File>
     </Files>
 </Mod>

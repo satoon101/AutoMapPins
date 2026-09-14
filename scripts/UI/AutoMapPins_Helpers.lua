@@ -100,12 +100,16 @@ end
 
 function RemovePin(playerID, pinID)
     local config = PlayerConfigurations[playerID]
+    if config == nil then
+        return
+    end
+
     local pins = config:GetMapPins()
     local pin = pins[pinID]
     local iconName = pin:GetIconName()
     local iX = pin:GetHexX()
     local iY = pin:GetHexY()
-    PlayerConfigurations[playerID]:DeleteMapPin(pinID)
+    config:DeleteMapPin(pinID)
     Network.BroadcastPlayerInfo()
     LuaEvents.MapPinPopup_OnDelete(playerID, pinID, iconName, iX, iY)
 end
