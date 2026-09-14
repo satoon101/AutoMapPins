@@ -332,13 +332,19 @@ function CityMapPinManager:FindDamPlotForRiverByRange(
 end
 
 function CityMapPinManager:GetDistrictForWonder()
+    if self.wonderName == nil then
+        return nil, nil
+    end
+
     local buildingInfo = GameInfo.Buildings[self.wonderName]
     if buildingInfo.AdjacentDistrict ~= nil then
         return buildingInfo.AdjacentDistrict, true
     end
+
     if #buildingInfo.PrereqBuildingCollection == 0 then
         return nil, nil
     end
+
     local buildingType = buildingInfo.PrereqBuildingCollection[1]
     local districtType = GameInfo.Districts[buildingType].PrereqDistrict
     return districtType, false
@@ -433,7 +439,7 @@ function CityMapPinManager:FindAdjacentPlotForDistrict(
 end
 
 function CityMapPinManager:FindPlotForForDistrictByRange(
-    districtType, baseDistrictType, distance, idealOnly, lakeOnly
+    districtType, baseDistrictType, distance, idealOnly, lakeOnly, coastOnly
 )
     local validTerrains = GetValidTerrainsForDistrict(districtType)
     local requiredFeatures = GetRequiredFeaturesForDistrict(districtType)
@@ -444,7 +450,7 @@ function CityMapPinManager:FindPlotForForDistrictByRange(
             if not idealOnly or self.idealDistrictPlots[plotID] ~= nil then
                 if self:IsPlotValidForDistrict(
                     districtType, baseDistrictType, plotID,
-                    validTerrains, requiredFeatures, lakeOnly
+                    validTerrains, requiredFeatures, lakeOnly, coastOnly
                 ) then
                     return plotID
                 end
@@ -473,8 +479,8 @@ function CityMapPinManager:GetDistrictForCivByType(districtType)
 end
 
 function CityMapPinManager:IsPlotValidForDistrict(
-    districtType, baseDistrictType, plotID,
-    validTerrains, requiredFeatures, lakeOnly
+    districtType, baseDistrictType, plotID, validTerrains,
+    requiredFeatures, lakeOnly, coastOnly
 )
     if self.mapPinIDsByPlot[plotID] ~= nil then
         return false
@@ -492,7 +498,14 @@ function CityMapPinManager:IsPlotValidForDistrict(
         if not plot:IsWater() then
             return false
         end
+        if not plot:IsAdjacentToLand() then
+            return false
+        end
         if lakeOnly and not plot:IsLake() then
+            return false
+        end
+        if coastOnly and plot:IsLake() then
+            -- TODO: look into figuring out if plot is in large lake that says it's ocean
             return false
         end
         for direction2 = 0, 5 do
