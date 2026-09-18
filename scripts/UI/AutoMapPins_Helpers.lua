@@ -1,8 +1,8 @@
 
 include("AutoMapPins_Constants")
 
-function GetWonderForPlot(pinName, plotID)
-    local building = GameInfo.Buildings[pinName]
+function GetWonderForPlot(iconName, plotID)
+    local building = GameInfo.Buildings[iconName]
     if building ~= nil then
         if (
             building.IsWonder or
@@ -14,8 +14,8 @@ function GetWonderForPlot(pinName, plotID)
     return nil
 end
 
-function GetCityCenterForPlot(pinName, plotID)
-    if pinName == "DISTRICT_CITY_CENTER" then
+function GetCityCenterForPlot(iconName, plotID)
+    if iconName == "DISTRICT_CITY_CENTER" then
         return plotID
     end
     local plot = Map.GetPlotByIndex(plotID)
@@ -40,8 +40,8 @@ function MatchCityCenterAndWonderPins(playerID, iX, iY, checkFunction)
         if distance <= 3 then
             local plot = Map.GetPlot(x, y)
             local plotID = plot:GetIndex()
-            local pinName = pin:GetIconName():gsub("^ICON_", "")
-            pinsByPlot[plotID] = pinName
+            local iconName = pin:GetIconName():gsub("^ICON_", "")
+            pinsByPlot[plotID] = iconName
         end
     end
 
@@ -49,8 +49,8 @@ function MatchCityCenterAndWonderPins(playerID, iX, iY, checkFunction)
     for i = 1, #radiusPlots do
         local plot = radiusPlots[i]
         local plotID = plot:GetIndex()
-        local pinName = pinsByPlot[plotID]
-        local value = checkFunction(pinName, plotID)
+        local iconName = pinsByPlot[plotID]
+        local value = checkFunction(iconName, plotID)
         if value then
             return value
         end
@@ -86,15 +86,15 @@ function GetRequiredFeaturesForDistrict(districtType)
     return requiredFeatures
 end
 
-function AddPin(playerID, pinName, plotID)
+function AddPin(playerID, iconName, plotID)
     local config = PlayerConfigurations[playerID]
     local plot = Map.GetPlotByIndex(plotID)
     local x = plot:GetX()
     local y = plot:GetY()
     local pin = config:GetMapPin(x, y)
-    pin:SetIconName(pinName)
+    pin:SetIconName(iconName)
     Network.BroadcastPlayerInfo()
-    LuaEvents.MapPinPopup_OnAdd(playerID, pin:GetID(), pinName, x, y)
+    LuaEvents.MapPinPopup_OnAdd(playerID, pin:GetID(), iconName, x, y)
     return pin
 end
 

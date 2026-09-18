@@ -7,7 +7,7 @@ print("=== Auto Map Pins (UI) Loading ===")
 
 include("AutoMapPins_Managers")
 
-function AddMapPinsForCityCenter(playerID, pinID, pinName, iX, iY)
+function AddMapPinsForCityCenter(playerID, pinID, iconName, iX, iY)
     local config = PlayerConfigurations[playerID]
     if config == nil then
         return
@@ -16,8 +16,8 @@ function AddMapPinsForCityCenter(playerID, pinID, pinName, iX, iY)
     local cityCenterPlotID = nil
     local cityWonderPlotID = nil
     local cityWonder = nil
-    pinName = pinName:gsub("^ICON_", "")
-    if pinName == "DISTRICT_CITY_CENTER" then
+    iconName = iconName:gsub("^ICON_", "")
+    if iconName == "DISTRICT_CITY_CENTER" then
         cityCenterPlotID = Map.GetPlot(iX, iY):GetIndex()
         cityWonderPlotID = MatchCityCenterAndWonderPins(
             playerID, iX, iY, GetWonderForPlot
@@ -29,14 +29,14 @@ function AddMapPinsForCityCenter(playerID, pinID, pinName, iX, iY)
         cityWonder = pin:gsub("^ICON_", "")
     end
 
-    if pinName == "DISTRICT_DIPLOMATIC_QUARTER" then
+    if iconName == "DISTRICT_DIPLOMATIC_QUARTER" then
         cityCenterPlotID = MatchCityCenterAndWonderPins(
             playerID, iX, iY, GetCityCenterForPlot
         )
-        cityWonder = pinName
+        cityWonder = iconName
     end
 
-    local buildingInfo = GameInfo.Buildings[pinName]
+    local buildingInfo = GameInfo.Buildings[iconName]
     if buildingInfo ~= nil and buildingInfo.IsWonder then
         cityCenterPlotID = MatchCityCenterAndWonderPins(
             playerID, iX, iY, GetCityCenterForPlot
@@ -76,7 +76,6 @@ function AddMapPinsForCityCenter(playerID, pinID, pinName, iX, iY)
         end
     end
 
-    print(obj.wonderName)
     if obj.wonderName ~= "DISTRICT_DIPLOMATIC_QUARTER" then
         local districtType, adjacent = obj:GetDistrictForWonder()
         if districtType ~= nil and districtType ~= "DISTRICT_CITY_CENTER" then
@@ -129,8 +128,8 @@ function RefreshAllCityData()
         if config ~= nil then
             local pins = config:GetMapPins()
             for _, pin in pairs(pins) do
-                local pinName = pin:GetIconName():gsub("^ICON_", "")
-                if pinName == "DISTRICT_CITY_CENTER" then
+                local iconName = pin:GetIconName():gsub("^ICON_", "")
+                if iconName == "DISTRICT_CITY_CENTER" then
                     local x = pin:GetHexX()
                     local y = pin:GetHexY()
                     RefreshDataForCity(playerID, x, y)
@@ -259,8 +258,8 @@ function RemoveMapPinForDistrict(playerID, _, cityID, iX, iY, districtType)
     if obj ~= nil then
         if districtType == WONDER_INDEX then
             local pinID = obj.mapPinIDsByPlot[plotID]
-            local pinName = obj.mapPinNamesByID[pinID]
-            obj.wonderName = pinName
+            local iconName = obj.mapPinNamesByID[pinID]
+            obj.wonderName = iconName
         end
         obj:RemoveMapPinForDistrict(iX, iY, districtType)
     end
