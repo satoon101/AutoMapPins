@@ -1,9 +1,9 @@
 -- ===========================================================================
---  Production Panel Restrictions - UI Script
+--  Auto Map Pins - UI Script
 --  Overrides MapPinPopup to call events on Ok & Delete.
 -- ===========================================================================
 
-print("=== Production Panel Restrictions (MapPinPopup) Loading ===")
+print("=== Auto Map Pins (MapPinPopup) Loading ===")
 
 include("MapPinPopup")
 
@@ -50,4 +50,4 @@ if Controls.DeleteButton then
     Controls.DeleteButton:RegisterCallback(Mouse.eLClick, OnDelete)
 end
 
-print("=== Production Panel Restrictions (MapPinPopup) Loaded ===")
+print("=== Auto Map Pins (MapPinPopup) Loaded ===")

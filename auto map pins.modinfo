@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Mod id="94bfbf5c-e25c-4da2-886c-dd9a14de20bd" version="1">
+
     <Properties>
         <Name>Auto Map Pins</Name>
         <Description>Automatically places pins in specific situations.</Description>
@@ -13,7 +14,7 @@
         <ReplaceUIScript id="MapPinPopup_UI">
             <Properties>
                 <LuaContext>MapPinPopup</LuaContext>
-                <LuaReplace>scripts/UI/MapPinPopup.lua</LuaReplace>
+                <LuaReplace>scripts/UI/MapPinPopup_Events.lua</LuaReplace>
             </Properties>
         </ReplaceUIScript>
 
@@ -38,6 +39,7 @@
         <File>scripts/UI/AutoMapPins_Constants.lua</File>
         <File>scripts/UI/AutoMapPins_Helpers.lua</File>
         <File>scripts/UI/AutoMapPins_Managers.lua</File>
-        <File>scripts/UI/MapPinPopup.lua</File>
+        <File>scripts/UI/MapPinPopup_Events.lua</File>
     </Files>
+
 </Mod>
