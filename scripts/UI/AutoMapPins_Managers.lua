@@ -420,7 +420,10 @@ function CityMapPinManager:FindAdjacentPlotForDistrict(
     for direction = 0, 5 do
         local plot = Map.GetAdjacentPlot(x, y, direction)
         local plotID = plot:GetIndex()
-        if self.mapPinIDsByPlot[plotID] == nil then
+        if (
+            self.plotMap[plotID] ~= nil and
+            self.mapPinIDsByPlot[plotID] == nil
+        ) then
             if not idealOnly or self.idealDistrictPlots[plotID] ~= nil then
                 if self:IsPlotValidForDistrict(
                     districtType, baseDistrictType, plotID,
