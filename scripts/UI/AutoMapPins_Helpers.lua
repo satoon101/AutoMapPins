@@ -8,7 +8,25 @@ function GetWonderForPlot(iconName, plotID)
             building.IsWonder or
             building.Index == DIPLOMATIC_INDEX
         ) then
-            return plotID
+            return iconName
+        end
+    end
+    local plot = Map.GetPlotByIndex(plotID)
+    if plot:GetDistrictType() == WONDER_INDEX then
+        local city = Cities.GetPlotPurchaseCity(plot)
+        local districts = city:GetDistricts()
+        local district = districts:FindID(plot:GetDistrictID())
+        local location = district:GetLocation()
+        local buildings = city:GetBuildings()
+        buildings = buildings:GetBuildingsAtLocation(location)
+        if #buildings == 1 then
+            return buildings[1]
+        end
+
+        local queue = city:GetBuildQueue()
+        buildings = queue:GetConstructionsAtLocation(location)
+        if #buildings == 1 then
+            return buildings[1]
         end
     end
     return nil
@@ -16,11 +34,11 @@ end
 
 function GetCityCenterForPlot(iconName, plotID)
     if iconName == "DISTRICT_CITY_CENTER" then
-        return plotID
+        return iconName
     end
     local plot = Map.GetPlotByIndex(plotID)
     if plot:IsCity() then
-        return plotID
+        return "DISTRICT_CITY_CENTER"
     end
     return nil
 end
@@ -28,7 +46,7 @@ end
 function MatchCityCenterAndWonderPins(playerID, iX, iY, checkFunction)
     local config = PlayerConfigurations[playerID]
     if config == nil then
-        return
+        return nil, nil
     end
 
     local pinsByPlot = {}
@@ -52,10 +70,10 @@ function MatchCityCenterAndWonderPins(playerID, iX, iY, checkFunction)
         local iconName = pinsByPlot[plotID]
         local value = checkFunction(iconName, plotID)
         if value then
-            return value
+            return value, plotID
         end
     end
-    return nil
+    return nil, nil
 end
 
 function GetValidTerrainsForDistrict(districtType)

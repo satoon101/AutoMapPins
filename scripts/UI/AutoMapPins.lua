@@ -7,6 +7,8 @@ print("=== Auto Map Pins (UI) Loading ===")
 
 include("AutoMapPins_Managers")
 
+FinishedInitialization = false
+
 function AddMapPinsForCityCenter(playerID, pinID, iconName, iX, iY)
     local config = PlayerConfigurations[playerID]
     if config == nil then
@@ -19,18 +21,16 @@ function AddMapPinsForCityCenter(playerID, pinID, iconName, iX, iY)
     iconName = iconName:gsub("^ICON_", "")
     if iconName == "DISTRICT_CITY_CENTER" then
         cityCenterPlotID = Map.GetPlot(iX, iY):GetIndex()
-        cityWonderPlotID = MatchCityCenterAndWonderPins(
+        cityWonder, cityWonderPlotID = MatchCityCenterAndWonderPins(
             playerID, iX, iY, GetWonderForPlot
         )
         local cityWonderPlot = Map.GetPlotByIndex(cityWonderPlotID)
         local x = cityWonderPlot:GetX()
         local y = cityWonderPlot:GetY()
-        local pin = config:GetMapPin(x, y)
-        cityWonder = pin:gsub("^ICON_", "")
     end
 
     if iconName == "DISTRICT_DIPLOMATIC_QUARTER" then
-        cityCenterPlotID = MatchCityCenterAndWonderPins(
+        _, cityCenterPlotID = MatchCityCenterAndWonderPins(
             playerID, iX, iY, GetCityCenterForPlot
         )
         cityWonder = iconName
@@ -38,7 +38,7 @@ function AddMapPinsForCityCenter(playerID, pinID, iconName, iX, iY)
 
     local buildingInfo = GameInfo.Buildings[iconName]
     if buildingInfo ~= nil and buildingInfo.IsWonder then
-        cityCenterPlotID = MatchCityCenterAndWonderPins(
+        _, cityCenterPlotID = MatchCityCenterAndWonderPins(
             playerID, iX, iY, GetCityCenterForPlot
         )
         cityWonder = buildingInfo.BuildingType
@@ -108,6 +108,7 @@ end
 LuaEvents.MapPinPopup_OnAdd.Add(AddMapPinsForCityCenter)
 
 function RefreshAllCityData()
+    FinishedInitialization = true
     local function RefreshDataForCity(playerID, iX, iY)
         local cityCenterPlotID = Map.GetPlot(iX, iY):GetIndex()
         local cityWonder, cityWonderPlotID = MatchCityCenterAndWonderPins(
@@ -124,21 +125,21 @@ function RefreshAllCityData()
     end
     local allPlayers = PlayerManager.GetAliveIDs()
     for playerID = 0, #allPlayers do
-        local config = PlayerConfigurations[playerID]
-        if config ~= nil then
-            local pins = config:GetMapPins()
-            for _, pin in pairs(pins) do
-                local iconName = pin:GetIconName():gsub("^ICON_", "")
-                if iconName == "DISTRICT_CITY_CENTER" then
-                    local x = pin:GetHexX()
-                    local y = pin:GetHexY()
-                    RefreshDataForCity(playerID, x, y)
+        local player = Players[playerID]
+        if player:IsHuman() then
+            local config = PlayerConfigurations[playerID]
+            if config ~= nil then
+                local pins = config:GetMapPins()
+                for _, pin in pairs(pins) do
+                    local iconName = pin:GetIconName():gsub("^ICON_", "")
+                    if iconName == "DISTRICT_CITY_CENTER" then
+                        local x = pin:GetHexX()
+                        local y = pin:GetHexY()
+                        RefreshDataForCity(playerID, x, y)
+                    end
                 end
             end
-        end
-        local player = Players[playerID]
-        local cities = player:GetCities()
-        if cities ~= nil and cities:GetCount() > 0 then
+            local cities = player:GetCities()
             for _, city in cities:Members() do
                 RefreshDataForCity(playerID, city:GetX(), city:GetY())
             end
@@ -149,6 +150,10 @@ end
 Events.LoadGameViewStateDone.Add(RefreshAllCityData)
 
 function MoveDistrictMapPinIfInConflict(iX, iY)
+    if not FinishedInitialization then
+        return
+    end
+
     local plot = Map.GetPlot(iX, iY)
     local plotID = plot:GetIndex()
     local obj = CityMapPinManager.FindInstanceForMapPinConflict(plotID)
@@ -234,6 +239,10 @@ end
 Events.CityInitialized.Add(AddInitialCityIcon)
 
 function RemoveMapPinForDistrict(playerID, _, cityID, iX, iY, districtType)
+    if not FinishedInitialization then
+        return
+    end
+
     if districtType == CITY_CENTER_INDEX then
         local config = PlayerConfigurations[playerID]
         if config ~= nil then
@@ -254,7 +263,7 @@ function RemoveMapPinForDistrict(playerID, _, cityID, iX, iY, districtType)
     local city = CityManager.GetCity(playerID, cityID)
     local cityPlot = Map.GetPlot(city:GetX(), city:GetY())
     local cityPlotID = cityPlot:GetIndex()
-    local obj = CityMapPinManager:new(playerID, cityPlotID, plotID, nil)
+    local obj = CityMapPinManager:new(playerID, cityPlotID)
     if obj ~= nil then
         if districtType == WONDER_INDEX then
             local pinID = obj.mapPinIDsByPlot[plotID]
@@ -266,5 +275,29 @@ function RemoveMapPinForDistrict(playerID, _, cityID, iX, iY, districtType)
 end
 
 Events.DistrictAddedToMap.Add(RemoveMapPinForDistrict)
+
+function RemoveMapPinForImprovement(iX, iY, improvementType, playerID)
+    if not FinishedInitialization then
+        return
+    end
+
+    local config = PlayerConfigurations[playerID]
+    if config == nil then
+        return
+    end
+
+    local pins = config:GetMapPins()
+    if pins == nil then
+        return
+    end
+
+    for pinID, pin in pairs(pins) do
+        if iX == pin:GetHexX() and iY == pin:GetHexY() then
+            RemovePin(playerID, pinID)
+        end
+    end
+end
+
+Events.ImprovementAddedToMap.Add(RemoveMapPinForImprovement)
 
 print("=== Auto Map Pins (UI) Loaded ===")
