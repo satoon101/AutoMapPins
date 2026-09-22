@@ -24,9 +24,6 @@ function AddMapPinsForCityCenter(playerID, pinID, iconName, iX, iY)
         cityWonder, cityWonderPlotID = MatchCityCenterAndWonderPins(
             playerID, iX, iY, GetWonderForPlot
         )
-        local cityWonderPlot = Map.GetPlotByIndex(cityWonderPlotID)
-        local x = cityWonderPlot:GetX()
-        local y = cityWonderPlot:GetY()
     end
 
     if iconName == "DISTRICT_DIPLOMATIC_QUARTER" then
@@ -57,7 +54,7 @@ function AddMapPinsForCityCenter(playerID, pinID, iconName, iX, iY)
     end
 
     obj:RefreshMapPinMapping()
-    -- fix a timing issue with creating the first city
+    -- fixes a timing issue with creating the first city
     if (
         cityWonderPlotID ~= nil and
         obj.mapPinIDsByPlot[cityWonderPlotID] == nil
@@ -106,6 +103,40 @@ function AddMapPinsForCityCenter(playerID, pinID, iconName, iX, iY)
 end
 
 LuaEvents.MapPinPopup_OnAdd.Add(AddMapPinsForCityCenter)
+
+function RenameMapPin(playerID, pinID, iconName)
+    iconName = iconName:gsub("^ICON_", "")
+    local config = PlayerConfigurations[playerID]
+    local pins = config:GetMapPins()
+    local pin = pins[pinID]
+    local newName = nil
+    if pin:GetName() ~= nil then
+        if iconName == "MAP_PIN_TRIANGLE" then
+            newName = nil
+        else
+            return
+        end
+    end
+
+    local info = GameInfo.Buildings[iconName]
+    if info ~= nil and info.IsWonder then
+        newName = "Wonder-" .. Locale.Lookup(info.Name)
+    elseif iconName == "MAP_PIN_DISTRICT" then
+        newName = "Settler Safe Plot"
+    elseif iconName == "DISTRICT_CITY_CENTER" then
+        newName = "City Center"
+    elseif GameInfo.Districts[iconName] ~= nil then
+        local name = Locale.Lookup(GameInfo.Districts[iconName].Name)
+        newName = "District-" .. name
+    end
+
+    if newName ~= nil then
+        pin:SetName(newName)
+        Network.BroadcastPlayerInfo()
+    end
+end
+
+LuaEvents.MapPinPopup_OnAdd.Add(RenameMapPin)
 
 function RefreshAllCityData()
     FinishedInitialization = true
@@ -164,14 +195,14 @@ end
 
 Events.ResourceAddedToMap.Add(MoveDistrictMapPinIfInConflict)
 
-function AddInitialCityIcon(playerID, _, iX, iY)
+function AddInitialCityIcon(playerID, cityID, iX, iY)
     local player = Players[playerID]
     if not player:IsAlive() or not player:IsHuman() then
         return
     end
 
-    local cities = player:GetCities()
-    if cities:GetCount() > 1 then
+    local city = CityManager.GetCity(playerID, cityID)
+    if not city:IsCapital() then
         return
     end
 
