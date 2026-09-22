@@ -28,7 +28,7 @@ function CityMapPinManager:new(playerID, centerPlotID, wonderPlotID, wonderName)
         if plotsByRange[distance] == nil then
             plotsByRange[distance] = {}
         end
-        table.insert(plotsByRange[distance], plotID)
+        plotsByRange[distance][plotID] = true
         table.insert(plotArray, plotID)
         plotMap[plotID] = {
             X = plot:GetX(),
@@ -316,8 +316,7 @@ function CityMapPinManager:FindDamPlotForRiverByRange(
     if excludeIdeal then
         excludePlots = self.idealDistrictPlots
     end
-    for i = 1, #self.plotsByRange[distance] do
-        local plotID = self.plotsByRange[distance][i]
+    for plotID in pairs(self.plotsByRange[distance]) do
         if plotIDs[plotID] ~= nil and excludePlots[plotID] == nil then
             local plot = Map.GetPlotByIndex(plotID)
             if not excludeResources or plot:GetResourceType() == -1 then
@@ -366,14 +365,22 @@ function CityMapPinManager:FindPlotForDistrict(baseDistrictType, adjacent)
     local districtType = self:GetDistrictForCivByType(baseDistrictType)
     if adjacent then
         local plotID = self:FindAdjacentPlotForDistrict(
-            self.wonderPlotID, districtType, baseDistrictType, true
+            self.wonderPlotID, districtType, baseDistrictType, false, true
         )
-        if plotID == nil then
-            plotID = self:FindAdjacentPlotForDistrict(
-                self.wonderPlotID, districtType, baseDistrictType, false
-            )
+        if plotID ~= nil then
+            return plotID
         end
-        return plotID
+
+        plotID = self:FindAdjacentPlotForDistrict(
+            self.wonderPlotID, districtType, baseDistrictType, true, false
+        )
+        if plotID ~= nil then
+            return plotID
+        end
+
+        return self:FindAdjacentPlotForDistrict(
+            self.wonderPlotID, districtType, baseDistrictType, false, false
+        )
     end
 
     local districtInfo = GameInfo.Districts[baseDistrictType]
@@ -410,7 +417,7 @@ function CityMapPinManager:FindPlotForDistrict(baseDistrictType, adjacent)
 end
 
 function CityMapPinManager:FindAdjacentPlotForDistrict(
-    centerPlotID, districtType, baseDistrictType, idealOnly
+    centerPlotID, districtType, baseDistrictType, idealOnly, range1Only
 )
     local validTerrains = GetValidTerrainsForDistrict(districtType)
     local requiredFeatures = GetRequiredFeaturesForDistrict(districtType)
@@ -425,11 +432,13 @@ function CityMapPinManager:FindAdjacentPlotForDistrict(
             self.mapPinIDsByPlot[plotID] == nil
         ) then
             if not idealOnly or self.idealDistrictPlots[plotID] ~= nil then
-                if self:IsPlotValidForDistrict(
-                    districtType, baseDistrictType, plotID,
-                    validTerrains, requiredFeatures
-                ) then
-                    return plotID
+                if not range1Only or self.plotsByRange[1][plotID] ~= nil then
+                    if self:IsPlotValidForDistrict(
+                        districtType, baseDistrictType, plotID,
+                        validTerrains, requiredFeatures
+                    ) then
+                        return plotID
+                    end
                 end
             end
         end
@@ -442,9 +451,7 @@ function CityMapPinManager:FindPlotForForDistrictByRange(
 )
     local validTerrains = GetValidTerrainsForDistrict(districtType)
     local requiredFeatures = GetRequiredFeaturesForDistrict(districtType)
-    local checkPlots = self.plotsByRange[distance]
-    for i = 1, #checkPlots do
-        local plotID = checkPlots[i]
+    for plotID in pairs(self.plotsByRange[distance]) do
         if self.mapPinIDsByPlot[plotID] == nil then
             if not idealOnly or self.idealDistrictPlots[plotID] ~= nil then
                 if self:IsPlotValidForDistrict(
