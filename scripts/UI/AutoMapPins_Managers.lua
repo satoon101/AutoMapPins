@@ -723,17 +723,18 @@ function RiverDamManager:FindDamDistrict()
         if districtType == DAM_INDEX then
             return plotID
         elseif districtType == WONDER_INDEX then
-            local city = CityManager.GetCity(self.playerID, self.cityID)
+            local city = Cities.GetPlotPurchaseCity(plot)
             local districts = city:GetDistricts()
             local queue = city:GetBuildQueue()
             local district = districts:GetDistrict(WONDER_INDEX)
             local location = district:GetLocation()
             local buildingIndex = nil
-            if district:IsComplete() then
-                local buildings = city:GetBuildings()
-                buildingIndex = buildings:GetBuildingsAtLocation(location)
+            local cityBuildings = city:GetBuildings()
+            local buildings = cityBuildings:GetBuildingsAtLocation(location)
+            if #buildings > 0 then
+                buildingIndex = buildings[1]
             else
-                local buildings = queue:GetConstructionsAtLocation(location)
+                buildings = queue:GetConstructionsAtLocation(location)
                 buildingIndex = buildings[1]
             end
             if buildingIndex == GREAT_BATH_BUILDING_INDEX then
