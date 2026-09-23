@@ -201,7 +201,10 @@ function CityMapPinManager:MovePin(plotID)
             -- pin is a wonder
             self:RemovePin(pinID, false)
             -- TODO: how to handle this?
-        elseif GameInfo.Districts[iconName] ~= nil then
+        elseif (
+            GameInfo.Districts[iconName] ~= nil and
+            GameInfo.Districts[iconName].Index ~= CITY_CENTER_INDEX
+        ) then
             -- pin is a district
             self:RemovePin(pinID, false)
             local baseDistrictType = GameInfo.Districts[iconName].DistrictType
