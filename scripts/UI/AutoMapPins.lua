@@ -307,7 +307,7 @@ end
 
 Events.DistrictAddedToMap.Add(RemoveMapPinForDistrict)
 
-function RemoveMapPinForImprovement(iX, iY, improvementType, playerID)
+function RemoveMapPinForImprovement(iX, iY, _, playerID)
     if not FinishedInitialization then
         return
     end
